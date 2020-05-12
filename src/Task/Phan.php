@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GrumPHP\Task;
 
+use GrumPHP\Collection\FilesCollection;
 use GrumPHP\Runner\TaskResult;
 use GrumPHP\Runner\TaskResultInterface;
 use GrumPHP\Task\Context\ContextInterface;
@@ -25,6 +26,7 @@ class Phan extends AbstractExternalTask
                 'output' => null,
                 'config_file' => '.phan/config.php',
                 'triggered_by' => ['php'],
+                'diff_only' => false,
             ]
         );
 
@@ -32,6 +34,7 @@ class Phan extends AbstractExternalTask
         $resolver->addAllowedTypes('output', ['null', 'string']);
         $resolver->addAllowedTypes('config_file', ['string']);
         $resolver->addAllowedTypes('triggered_by', ['array']);
+        $resolver->addAllowedTypes('diff_only', ['boolean']);
 
         return $resolver;
     }
@@ -62,6 +65,16 @@ class Phan extends AbstractExternalTask
         $arguments->addOptionalArgumentWithSeparatedValue('--config-file', $config['config_file']);
         $arguments->addOptionalArgumentWithSeparatedValue('--output-mode', $config['output_mode']);
         $arguments->addOptionalArgumentWithSeparatedValue('--output', $config['output']);
+
+        if ($config['diff_only']) {
+            $paths = [];
+
+            foreach ($files as $file) {
+                $paths[] = $file->getPathname();
+            }
+
+            $arguments->addOptionalArgumentWithSeparatedValue('--include-analysis-file-list', implode(',', $paths));
+        }
 
         $process = $this->processBuilder->buildProcess($arguments);
         $process->run();
